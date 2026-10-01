@@ -1,3 +1,15 @@
+// Ép sử dụng IPv4 trước cho toàn bộ DNS và Fetch (tránh timeout do ISP Việt Nam chặn/lỗi tuyến IPv6 của Google Gemini và Telegram)
+const dns = require('dns');
+dns.setDefaultResultOrder('ipv4first');
+
+const { setGlobalDispatcher, Agent } = require('undici');
+setGlobalDispatcher(new Agent({
+  connect: {
+    family: 4,
+    timeout: 30000
+  }
+}));
+
 const express = require('express');
 const http = require('http');
 const cors = require('cors');
