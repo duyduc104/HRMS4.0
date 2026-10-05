@@ -138,17 +138,6 @@ const startServer = async () => {
     // Authenticate and sync with Database
     await sequelize.authenticate();
     console.log('✅ Connection to SQL Server has been established successfully.');
-
-    // Tự động dọn dẹp các bảng phân quyền cũ
-    try {
-      await sequelize.query(`
-        IF OBJECT_ID(N'[DepartmentPermissions]', N'U') IS NOT NULL DROP TABLE [DepartmentPermissions];
-        IF OBJECT_ID(N'[EmployeePermissions]', N'U') IS NOT NULL DROP TABLE [EmployeePermissions];
-      `);
-      console.log('✅ Đã dọn dẹp các bảng phân quyền RBAC cũ khỏi Database.');
-    } catch (colErr) {
-      console.warn('Cảnh báo khi dọn dẹp bảng RBAC:', colErr.message);
-    }
     
     // Sync models with database (without alter to avoid MSSQL UNIQUE syntax bug)
     await sequelize.sync();

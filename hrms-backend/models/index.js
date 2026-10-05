@@ -27,6 +27,8 @@ const MenuItem = require('./MenuItem');
 const SecurityViolation = require('./SecurityViolation');
 const Document = require('./Document');
 const DocumentCategory = require('./DocumentCategory');
+const DepartmentPermission = require('./DepartmentPermission');
+const EmployeePermission = require('./EmployeePermission');
 
 // Define Relationships
 Employee.hasOne(OnboardingRecord, { foreignKey: 'employeeId', as: 'onboarding' });
@@ -101,6 +103,10 @@ ScheduledEvent.belongsTo(Employee, { foreignKey: 'creatorId', as: 'creator' });
 Employee.hasMany(SecurityViolation, { foreignKey: 'employeeId', as: 'securityViolations' });
 SecurityViolation.belongsTo(Employee, { foreignKey: 'employeeId', as: 'employee' });
 
+// Granular RBAC Permissions
+Employee.hasMany(EmployeePermission, { foreignKey: 'employeeId', as: 'employeePermissions' });
+EmployeePermission.belongsTo(Employee, { foreignKey: 'employeeId', as: 'employee' });
+
 module.exports = {
   sequelize,
   Department,
@@ -129,5 +135,7 @@ module.exports = {
   MenuItem,
   SecurityViolation,
   Document,
-  DocumentCategory
+  DocumentCategory,
+  DepartmentPermission,
+  EmployeePermission
 };

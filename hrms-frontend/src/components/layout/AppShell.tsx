@@ -11,6 +11,7 @@ import { isExtensionActive } from '../../utils/checkExtension';
 import { useAuthStore } from '../../stores/useAuthStore';
 import { toast } from '../../stores/useToastStore';
 import { SecurityViolationGuard } from './SecurityViolationGuard';
+import api from '../../services/api';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -39,17 +40,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       if (!isExtensionActive()) {
         // User bắt buộc cài Extension mà Extension bị tắt -> Log và logout
         try {
-          await fetch('http://localhost:5000/api/web-filters/logs', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              employeeId: user.id,
-              url: window.location.href,
-              action: 'extension_disabled',
-              os: navigator.userAgent,
-              browser: 'Chrome/Edge',
-              device: 'Desktop'
-            })
+          await api.post('/web-filters/logs', {
+            employeeId: user.id,
+            url: window.location.href,
+            action: 'extension_disabled',
+            os: navigator.userAgent,
+            browser: 'Chrome/Edge',
+            device: 'Desktop'
           });
         } catch (e) {
           console.error('Lỗi khi gửi log tắt extension', e);

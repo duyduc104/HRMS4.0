@@ -1,3 +1,8 @@
 node_modules/
 .env
 .DS_Store
+
+hrms-backend/public/uploads/*
+!hrms-backend/public/uploads/.gitkeep
+hrms-backend/dropConstraint.js
+hrms-backend/test_doc.js

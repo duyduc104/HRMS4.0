@@ -12,9 +12,9 @@ export default defineConfig({
         target: 'http://localhost:5000',
         changeOrigin: true,
         configure: (proxy, _options) => {
-          proxy.on('error', (err, _req, res) => {
-            if (['ECONNABORTED', 'ECONNRESET', 'ECONNREFUSED', 'EPIPE'].includes(err.code || '')) return;
-            console.log('[Proxy /api] error:', err.message);
+          proxy.on('error', (err: any) => {
+            if (['ECONNABORTED', 'ECONNRESET', 'ECONNREFUSED', 'EPIPE'].includes(err?.code || '')) return;
+            console.log('[Proxy /api] error:', err?.message);
           });
         }
       },
@@ -26,9 +26,9 @@ export default defineConfig({
         target: 'http://localhost:5000',
         ws: true,
         configure: (proxy, _options) => {
-          proxy.on('error', (err, _req, _res) => {
-            if (['ECONNABORTED', 'ECONNRESET', 'ECONNREFUSED', 'EPIPE'].includes(err.code || '')) return;
-            console.log('[Proxy /socket.io] error:', err.message);
+          proxy.on('error', (err: any) => {
+            if (['ECONNABORTED', 'ECONNRESET', 'ECONNREFUSED', 'EPIPE'].includes(err?.code || '')) return;
+            console.log('[Proxy /socket.io] error:', err?.message);
           });
         }
       }

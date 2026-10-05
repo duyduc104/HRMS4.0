@@ -11,10 +11,13 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline';
   size?: 'xs' | 'sm' | 'md' | 'lg';
   isLoading?: boolean;
+  rounded?: boolean;
+  leftIcon?: React.ReactNode;
+  rightIcon?: React.ReactNode;
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = 'primary', size = 'md', isLoading, disabled, children, ...props }, ref) => {
+  ({ className, variant = 'primary', size = 'md', isLoading, disabled, rounded, leftIcon, rightIcon, children, ...props }, ref) => {
     
     const variants = {
       primary: 'bg-brand-500 text-white hover:bg-brand-600 shadow-sm',
@@ -40,13 +43,18 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           'focus:outline-none focus:ring-2 focus:ring-brand-500/40',
           'disabled:opacity-50 disabled:cursor-not-allowed',
           variants[variant],
-          sizes[size],
+          rounded ? 'rounded-full' : sizes[size],
           className
         )}
         {...props}
       >
-        {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+        {isLoading ? (
+          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+        ) : (
+          leftIcon && <span className="mr-2 inline-flex items-center">{leftIcon}</span>
+        )}
         {children}
+        {!isLoading && rightIcon && <span className="ml-2 inline-flex items-center">{rightIcon}</span>}
       </button>
     );
   }

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, User, LayoutDashboard, Settings, ShieldAlert, FileText, MessageCircle, Moon, Sun, LogOut } from 'lucide-react';
+import { Search, User, LayoutDashboard, Settings, ShieldAlert, FileText, MessageCircle, Moon, Sun, LogOut, BookOpen, Bot, Share2, Calendar } from 'lucide-react';
 import api from '../../services/api';
 import { useThemeStore } from '../../stores/useThemeStore';
 import { useAuthStore } from '../../stores/useAuthStore';
@@ -36,19 +36,23 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
   // Define static actions and pages
   const staticItems = [
     { id: 'p1', type: 'page', title: 'Tổng quan (Dashboard)', icon: <LayoutDashboard className="w-4 h-4" />, action: () => navigate('/') },
-    { id: 'p2', type: 'page', title: 'Mạng nội bộ (Chat)', icon: <MessageCircle className="w-4 h-4" />, action: () => navigate('/chat') },
-    { id: 'p3', type: 'page', title: 'Onboarding', icon: <FileText className="w-4 h-4" />, action: () => navigate('/onboarding') },
-    { id: 'p4', type: 'page', title: 'Lịch & Sự kiện', icon: <FileText className="w-4 h-4" />, action: () => navigate('/events') },
-    { id: 'p5', type: 'page', title: 'Quản lý nhân viên', icon: <User className="w-4 h-4" />, action: () => navigate('/employees') },
-    { id: 'p6', type: 'page', title: 'Chấm công', icon: <FileText className="w-4 h-4" />, action: () => navigate('/attendance') },
-    { id: 'p7', type: 'page', title: 'Nghỉ phép', icon: <FileText className="w-4 h-4" />, action: () => navigate('/leave') },
-    { id: 'p8', type: 'page', title: 'Lương (Payroll)', icon: <FileText className="w-4 h-4" />, action: () => navigate('/payroll') },
+    { id: 'p2', type: 'page', title: 'Chính sách & Quy định', icon: <BookOpen className="w-4 h-4" />, action: () => navigate('/policies') },
+    { id: 'p3', type: 'page', title: 'Kho tài liệu công ty', icon: <FileText className="w-4 h-4" />, action: () => navigate('/documents') },
+    { id: 'p4', type: 'page', title: 'Mạng nội bộ (Chat)', icon: <MessageCircle className="w-4 h-4" />, action: () => navigate('/chat') },
+    { id: 'p5', type: 'page', title: 'Bảng tin nội bộ (Feed)', icon: <Share2 className="w-4 h-4" />, action: () => navigate('/feed') },
+    { id: 'p6', type: 'page', title: 'Công cụ AI', icon: <Bot className="w-4 h-4" />, action: () => navigate('/ai-tools') },
+    { id: 'p7', type: 'page', title: 'Onboarding', icon: <FileText className="w-4 h-4" />, action: () => navigate('/onboarding') },
+    { id: 'p8', type: 'page', title: 'Lịch & Sự kiện', icon: <Calendar className="w-4 h-4" />, action: () => navigate('/events') },
     ...((user?.role as string) === 'admin' || (user?.role as string) === 'hr_manager' || (user?.role as string) === 'department_manager' ? [
-      { id: 'p9', type: 'page', title: 'Hiệu suất (KPI / OKR)', icon: <FileText className="w-4 h-4" />, action: () => navigate('/performance') },
+      { id: 'p9', type: 'page', title: 'Quản lý nhân viên', icon: <User className="w-4 h-4" />, action: () => navigate('/employees') },
     ] : []),
+    { id: 'p10', type: 'page', title: 'Chấm công', icon: <FileText className="w-4 h-4" />, action: () => navigate('/attendance') },
+    { id: 'p11', type: 'page', title: 'Nghỉ phép', icon: <FileText className="w-4 h-4" />, action: () => navigate('/leave') },
+    { id: 'p12', type: 'page', title: 'Lương (Payroll)', icon: <FileText className="w-4 h-4" />, action: () => navigate('/payroll') },
+    { id: 'p13', type: 'page', title: 'Hồ sơ cá nhân', icon: <User className="w-4 h-4" />, action: () => navigate('/profile') },
     ...(user?.role === 'admin' || user?.roles?.some((r: any) => r.name === 'admin') ? [
-      { id: 'p10', type: 'page', title: 'Bảo mật & Log', icon: <ShieldAlert className="w-4 h-4" />, action: () => navigate('/security') },
-      { id: 'p11', type: 'page', title: 'Cài đặt hệ thống', icon: <Settings className="w-4 h-4" />, action: () => navigate('/settings') }
+      { id: 'p14', type: 'page', title: 'Bảo mật & Log', icon: <ShieldAlert className="w-4 h-4" />, action: () => navigate('/security') },
+      { id: 'p15', type: 'page', title: 'Cài đặt hệ thống', icon: <Settings className="w-4 h-4" />, action: () => navigate('/settings') }
     ] : []),
     { id: 'a1', type: 'action', title: `Đổi giao diện sang ${theme === 'dark' ? 'Sáng' : 'Tối'}`, icon: theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />, action: () => setTheme(theme === 'dark' ? 'light' : 'dark') },
     { id: 'a2', type: 'action', title: 'Đăng xuất', icon: <LogOut className="w-4 h-4" />, action: () => { logout(); navigate('/login'); } }

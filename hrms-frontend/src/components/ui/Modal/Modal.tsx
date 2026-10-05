@@ -6,10 +6,19 @@ interface ModalProps {
   onClose: () => void;
   title: string;
   children: React.ReactNode;
+  size?: 'sm' | 'md' | 'lg' | 'xl' | string;
 }
 
-export function Modal({ isOpen, onClose, title, children }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
+
+  const sizeClasses: Record<string, string> = {
+    sm: 'max-w-md',
+    md: 'max-w-lg',
+    lg: 'max-w-2xl',
+    xl: 'max-w-4xl'
+  };
+  const widthClass = sizeClasses[size] || 'max-w-lg';
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -33,7 +42,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
       <div 
         ref={modalRef}
-        className="bg-surface w-full max-w-lg rounded-xl shadow-2xl border border-border flex flex-col max-h-[90vh] animate-slide-up"
+        className={`bg-surface w-full ${widthClass} rounded-xl shadow-2xl border border-border flex flex-col max-h-[90vh] animate-slide-up`}
         role="dialog"
         aria-modal="true"
       >
