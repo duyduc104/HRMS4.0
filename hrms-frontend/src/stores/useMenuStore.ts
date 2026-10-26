@@ -23,11 +23,14 @@ interface MenuStore {
   fetchMenus: () => Promise<void>;
 }
 
+// Zustand Store quan ly danh sach Navigation Menu dong hien thi tren Sidebar
+
 export const useMenuStore = create<MenuStore>((set, get) => ({
   menuGroups: [],
   loading: false,
   loaded: false,
 
+  // Ham nay dung de goi API lay danh sach cac nhom menu dong da duoc loc theo Role va Setting feature toggles
   fetchMenus: async () => {
     try {
       set({ loading: true });

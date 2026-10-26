@@ -10,6 +10,7 @@ const CryptoService = require('../../services/cryptoService');
 const TokenService = require('./tokenService');
 const AuthNotificationFacade = require('./authNotificationFacade');
 const { PasswordLoginStrategy, FaceIDLoginStrategy } = require('./authStrategy');
+const { defaultOtpContext } = require('./otpStrategy');
 
 class AuthService {
   /**
@@ -205,16 +206,8 @@ class AuthService {
     const redisKey = `OTP_PASSWORD_${user.id}`;
     await redisClient.setEx(redisKey, 180, otp); // 3 phút
 
-    if (method === 'email') {
-      await AuthNotificationFacade.sendPasswordOtpEmail(user, otp);
-      return 'OTP đã được gửi đến Email của bạn.';
-    } else if (method === 'telegram') {
-      const isSent = AuthNotificationFacade.sendPasswordOtpTelegram(user, otp);
-      if (!isSent) throw { status: 400, message: 'Hệ thống Telegram chưa sẵn sàng.' };
-      return 'OTP đã được gửi đến Telegram của bạn.';
-    } else {
-      throw { status: 400, message: 'Phương thức không hợp lệ' };
-    }
+    // Sử dụng Strategy Pattern để gửi OTP theo phương thức được yêu cầu (Email, Telegram...)
+    return await defaultOtpContext.deliverOtp(method, user, otp);
   }
 
   /**

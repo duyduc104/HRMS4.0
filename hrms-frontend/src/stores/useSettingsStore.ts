@@ -7,9 +7,12 @@ interface SettingsState {
   fetchSettings: () => Promise<void>;
 }
 
+// Zustand Store quan ly cac cau hinh cai dat he thong (Setting Toggles: ENABLE_CHAT, ENABLE_POLICIES...)
+
 export const useSettingsStore = create<SettingsState>((set) => ({
   settings: {},
   isLoading: false,
+  // Ham nay dung de lay toan bo cac cap key-value cau hinh cai dat he thong tu Backend
   fetchSettings: async () => {
     set({ isLoading: true });
     try {
