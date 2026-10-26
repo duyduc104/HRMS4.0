@@ -2,6 +2,11 @@ import axios from "axios";
 import { useAuthStore } from "../stores/useAuthStore";
 import { toast } from "../stores/useToastStore";
 
+// Cau hinh Axios Instance trung tam va co che Request/Response Interceptors toan Frontend
+// Giai thich code khong thuan:
+// - Request Interceptor: Tu dong lay Bearer JWT Token truc tiep tu Zustand Store (useAuthStore.getState()) ma khong can thong qua React Hook.
+// - Response Interceptor: Tu dong bat loi 403 va 401 de hien thi thong bao loi (Toast) va tu dong Force-Logout chuyen huong ve trang /login neu tai khoan bi khoa hoac het han phien.
+
 const api = axios.create({
     baseURL: '/api',
     headers: {
@@ -10,6 +15,7 @@ const api = axios.create({
     },
 })
 
+// Interceptor can thiep truoc khi gui request: tu dong dinh kem JWT vao Header Authorization
 api.interceptors.request.use(
     config => {
         const token = useAuthStore.getState().token;
@@ -23,11 +29,12 @@ api.interceptors.request.use(
     }
 );
 
+// Interceptor can thiep sau khi nhan response: xu ly tap trung loi phan quyen 403 va het han phien 401
 api.interceptors.response.use(
     response => response,
     error => {
         if (error.response) {
-            // Handle 403 Forbidden specifically for RBAC permissions or deleted account
+            // Xu ly loi 403 Forbidden cho phan quyen RBAC hoac tai khoan bi xoa
             if (error.response.status === 403) {
                 if (error.response.data?.isDeleted) {
                     toast.error('Tài khoản đã bị khóa', error.response.data?.message || 'Tài khoản của bạn đã bị xóa khỏi hệ thống.');

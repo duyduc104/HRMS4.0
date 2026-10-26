@@ -3,9 +3,16 @@ import { io } from 'socket.io-client';
 import { useAuthStore } from './useAuthStore';
 import { toast } from './useToastStore';
 
-// Hiển thị modal cảnh báo với countdown và nút Đăng xuất ngay
+// Hook trung tam lang nghe cac su kien Realtime Socket.io va dieu phoi thong bao toan ung dung
+// Giai thich code khong thuan:
+// - Ket noi Socket.io Client truyen kem JWT token xac thuc, fallback tu dong giua WebSocket va HTTP Polling.
+// - Phat hien dang nhap trung lap (Concurrent Login): So sanh loginTime trong sessionStorage voi socket payload de chi da phien cu, tranh loi da phien khi nguoi dung F5.
+// - Tao modal canh bao truc tiep bang DOM JavaScript thuan (document.createElement) voi hieu ung backdrop-filter va bo dem nguoc countdown 5s.
+// - Su dung CustomEvent (window.dispatchEvent) de ban su kien ngam den cac component chuong thong bao ma khong gay re-render thua.
+
+// Ham nay dung de hien thi hop thoai canh bao dang nhap tu thiet bi khac voi bo dem nguoc 5 giay va nut dang xuat ngay
 function showConcurrentLoginModal(message: string, onLogout: () => void) {
-  // Nếu đã có modal thì không tạo thêm
+  // Neu da co modal thi khong tao them
   if (document.getElementById('concurrent-login-modal')) return;
 
   let countdown = 5;
@@ -74,14 +81,17 @@ function showConcurrentLoginModal(message: string, onLogout: () => void) {
   }, 1000);
 }
 
+// Hook nay dung de khoi tao ket noi Socket.io toan cuc va lang nghe cac su kien tu may chu Backend
 export function useGlobalSocket() {
   const { token, logout } = useAuthStore();
 
   useEffect(() => {
     if (!token) return;
 
-    // Kết nối thẳng tới backend port 5000 để tránh lỗi WebSocket proxy của Vite
-    const backendUrl = 'http://localhost:5000';
+    // Kết nối tới backend theo cấu hình môi trường hoặc fallback port 5000
+    const backendUrl = import.meta.env.VITE_API_URL
+      ? import.meta.env.VITE_API_URL.replace('/api', '')
+      : 'http://localhost:5000';
     const socket = io(backendUrl, {
       auth: { token },
       extraHeaders: { 'ngrok-skip-browser-warning': 'true' },
