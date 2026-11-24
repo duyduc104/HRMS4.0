@@ -49,8 +49,4 @@ const WebAccessLog = sequelize.define('WebAccessLog', {
   timestamps: false,
 });
 
-// Thiết lập quan hệ
-Employee.hasMany(WebAccessLog, { foreignKey: 'employeeId' });
-WebAccessLog.belongsTo(Employee, { foreignKey: 'employeeId' });
-
 module.exports = WebAccessLog;

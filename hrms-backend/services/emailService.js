@@ -9,7 +9,9 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+// Service gui email thong bao he thong qua giao thuc SMTP dung thu vien Nodemailer
 class EmailService {
+  // Ham nay dung de gui email toi nguoi nhan voi tieu de va noi dung HTML dinh dang san
   static async sendMail(to, subject, html) {
     try {
       await transporter.sendMail({

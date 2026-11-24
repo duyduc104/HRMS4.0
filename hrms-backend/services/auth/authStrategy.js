@@ -44,8 +44,8 @@ class PasswordLoginStrategy extends AuthStrategy {
       throw { status: 401, message: 'Sai username hoặc mật khẩu' };
     }
 
-    if (user.isDeleted) {
-      throw { status: 403, message: 'Tài khoản của bạn đã bị khóa hoặc xóa khỏi hệ thống' };
+    if (user.isDeleted || user.status === 'resigned' || user.status === 'inactive') {
+      throw { status: 403, message: 'Tài khoản của bạn đã ngừng hoạt động hoặc đã thôi việc, không thể đăng nhập' };
     }
 
     const requiresExt = await this.checkExtensionRequirement(user);
@@ -76,8 +76,8 @@ class FaceIDLoginStrategy extends AuthStrategy {
       throw { status: 401, message: 'Không tìm thấy user' };
     }
 
-    if (user.isDeleted) {
-      throw { status: 403, message: 'Tài khoản của bạn đã bị khóa hoặc xóa khỏi hệ thống' };
+    if (user.isDeleted || user.status === 'resigned' || user.status === 'inactive') {
+      throw { status: 403, message: 'Tài khoản của bạn đã ngừng hoạt động hoặc đã thôi việc, không thể đăng nhập' };
     }
 
     if (!user.faceEncoding || !user.faceEncodingIV) {
@@ -97,7 +97,7 @@ class FaceIDLoginStrategy extends AuthStrategy {
       throw { status: 500, message: 'Dữ liệu khuôn mặt bị hỏng. Vui lòng đăng ký lại Face ID.' };
     }
 
-    // Đối chiếu (dùng ngưỡng 0.60 theo logic cũ)
+    // Đối chiếu (dùng ngưỡng 0.60)
     const isMatch = FaceVectorService.compareFace(faceVector, storedVector, 0.60);
     if (!isMatch) {
       throw { status: 401, message: 'Khuôn mặt không khớp' };

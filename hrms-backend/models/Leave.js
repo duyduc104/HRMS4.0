@@ -29,14 +29,34 @@ const Leave = sequelize.define('Leave', {
     allowNull: false,
   },
   status: {
-    type: DataTypes.ENUM('Pending', 'Approved', 'Rejected'),
+    type: DataTypes.STRING(50),
     defaultValue: 'Pending',
   },
   reason: {
     type: DataTypes.TEXT,
   },
+  managerApprovedBy: {
+    type: DataTypes.UUID,
+    allowNull: true,
+  },
+  managerApprovedAt: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
+  hrApprovedBy: {
+    type: DataTypes.UUID,
+    allowNull: true,
+  },
+  hrApprovedAt: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
   approvedBy: {
-    type: DataTypes.UUID, // ID of manager who approved
+    type: DataTypes.UUID, // ID of final approver (Admin)
+    allowNull: true,
+  },
+  rejectionReason: {
+    type: DataTypes.TEXT,
     allowNull: true,
   }
 }, {

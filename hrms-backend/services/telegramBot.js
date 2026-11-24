@@ -18,10 +18,17 @@ if (!token) {
 
 const bot = token ? new TelegramBot(token, { polling: true }) : null;
 
+// Service tich hop Telegram Bot tuong tac hai chieu voi nhan vien qua cac lenh HRMS va tro ly AI
+// Giai thich code khong thuan:
+// - Su dung node-telegram-bot-api che do Polling de lang nghe tin nhan theo thoi gian thuc tu Telegram Server.
+// - Lien ket dinh danh 1-1 giua Telegram chatId va employeeId trong CSDL giup xac thuc nguoi dung bao mat.
+// - Tich hop tinh Am - Duong lich bang thuat toan thien van hoc cua thu vien lunar-javascript.
+// - Chuyen tiep cac tin nhan hoi thoai tu nhien sang Bull Queue (aiQueueService) de goi Gemini AI va cap nhat ket qua bang co che editMessageText.
+
 if (bot) {
   console.log('🤖 Telegram Bot đang chạy... (Restarted)');
   
-  // Tạo menu lệnh cho Telegram Bot
+  // Tao menu lenh cho Telegram Bot
   bot.setMyCommands([
     { command: 'start', description: 'Bắt đầu sử dụng bot' },
     { command: 'login', description: 'Đăng nhập hệ thống' },
@@ -39,9 +46,9 @@ if (bot) {
     { command: 'lich', description: 'Xem lịch Âm Dương' }
   ]).catch(err => console.error('Lỗi khi thiết lập menu Telebot:', err));
 
-  // --- CÁC HÀM TIỆN ÍCH ---
+  // --- CAC HAM TIEN ICH ---
 
-  // 1. Tính Âm - Dương Lịch
+  // Ham nay dung de tinh toan ngay thang Am lich tu ngay Duong lich bang thu vien lunar-javascript
   function getLunarDate(date) {
     try {
       const solar = Solar.fromDate(date);
@@ -52,15 +59,15 @@ if (bot) {
     }
   }
 
-  // Cache tin tức để tránh việc RSS bị lệch index giữa các lần gọi
+  // Cache tin tuc de tranh viec RSS bi lech index giua cac lan goi
   let cachedNews = [];
   let lastNewsFetch = 0;
 
-  // 2. Lấy RSS Tin tức (VNExpress)
+  // Ham nay dung de cao 10 tin tuc moi nhat tu RSS VnExpress va luu cache trong bo nho 10 phut
   async function getNews() {
     const now = Date.now();
     if (cachedNews.length > 0 && (now - lastNewsFetch) < 10 * 60 * 1000) {
-      return cachedNews; // Trả về cache nếu chưa quá 10 phút
+      return cachedNews; // Tra ve cache neu chua qua 10 phut
     }
     
     try {
@@ -75,7 +82,7 @@ if (bot) {
     }
   }
 
-  // 3. Lấy thời tiết (OpenWeatherMap)
+  // Ham nay dung de lay thong tin du bao thoi tiet cua mot thanh pho qua OpenWeatherMap API
   async function getWeather(city = 'Hanoi') {
     const API_KEY = process.env.WEATHER_API_KEY;
     if (!API_KEY) return 'Vui lòng cấu hình WEATHER_API_KEY trong file .env';
@@ -190,7 +197,7 @@ if (bot) {
     }
   });
 
-  // Middleware: Kiểm tra liên kết
+  // Ham nay dung de xac thuc va tra ve thong tin nhan vien tuong ung voi chatId Telegram dang tuong tac
   async function getAuthenticatedUser(chatId) {
     const tgAccount = await TelegramAccount.findOne({
       where: { chatId: chatId.toString() },
@@ -573,7 +580,7 @@ if (bot) {
       // Sinh Google Meet
       let meetLink = '';
       try {
-        const googleCalendarController = require('./googleCalendarController');
+        const googleCalendarController = require('../controllers/googleCalendarController');
         const { google } = require('googleapis');
         const authClient = await googleCalendarController.getAuthenticatedClient(user.id);
         if (authClient) {

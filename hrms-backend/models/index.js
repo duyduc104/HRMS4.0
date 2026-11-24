@@ -57,6 +57,9 @@ Attendance.belongsTo(Employee, { foreignKey: 'employeeId', as: 'employee' });
 
 Employee.hasMany(Leave, { foreignKey: 'employeeId', as: 'leaves' });
 Leave.belongsTo(Employee, { foreignKey: 'employeeId', as: 'employee' });
+Leave.belongsTo(Employee, { foreignKey: 'managerApprovedBy', as: 'managerApprover' });
+Leave.belongsTo(Employee, { foreignKey: 'hrApprovedBy', as: 'hrApprover' });
+Leave.belongsTo(Employee, { foreignKey: 'approvedBy', as: 'approver' });
 
 Employee.hasMany(Payroll, { foreignKey: 'employeeId', as: 'payrolls' });
 Payroll.belongsTo(Employee, { foreignKey: 'employeeId', as: 'employee' });
@@ -94,6 +97,9 @@ Message.hasMany(Message, { as: 'replies', foreignKey: 'replyToId' });
 // Attendance Explanation Relationships
 Employee.hasMany(AttendanceExplanation, { foreignKey: 'employeeId', as: 'explanations' });
 AttendanceExplanation.belongsTo(Employee, { foreignKey: 'employeeId', as: 'employee' });
+AttendanceExplanation.belongsTo(Employee, { foreignKey: 'managerApprovedBy', as: 'managerApprover' });
+AttendanceExplanation.belongsTo(Employee, { foreignKey: 'hrApprovedBy', as: 'hrApprover' });
+AttendanceExplanation.belongsTo(Employee, { foreignKey: 'approvedBy', as: 'approver' });
 
 // Scheduled Events Relationships
 Employee.hasMany(ScheduledEvent, { foreignKey: 'creatorId', as: 'scheduledEvents' });

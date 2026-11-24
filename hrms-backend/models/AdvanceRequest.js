@@ -43,6 +43,18 @@ const AdvanceRequest = sequelize.define('AdvanceRequest', {
   paymentDate: {
     type: DataTypes.DATE,
     allowNull: true,
+  },
+  approvedBy: {
+    type: DataTypes.UUID,
+    allowNull: true,
+  },
+  approvedAt: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
+  rejectionReason: {
+    type: DataTypes.TEXT,
+    allowNull: true,
   }
 }, {
   tableName: 'AdvanceRequests',

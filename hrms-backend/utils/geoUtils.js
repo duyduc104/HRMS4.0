@@ -1,8 +1,14 @@
-/**
- * Tính khoảng cách (mét) giữa 2 điểm tọa độ bằng công thức Haversine
- */
+// Tien ich tinh toan toa do dia ly GPS va kiem tra khoang cach Geofencing
+// Giai thich code khong thuan:
+// - Ap dung cong thuc luong giac Haversine tren mat cau:
+//   a = sin^2(dp/2) + cos(p1)*cos(p2)*sin^2(dl/2)
+//   c = 2 * atan2(sqrt(a), sqrt(1-a))
+//   distance = R * c (voi ban kinh trai dat R = 6,371,000 met)
+// - Giup tinh chinh xac khoang cach tuyet doi giua vi tri nhan vien va toa do van phong cong ty.
+
+// Ham nay dung de tinh khoang cach theo don vi met giua 2 cap toa do GPS (vi do, kinh do) bang cong thuc Haversine
 function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
-  const R = 6371e3; // Bán kính trái đất tính bằng mét
+  const R = 6371e3; // Ban kinh trai dat tinh bang met
   const p1 = lat1 * Math.PI/180; 
   const p2 = lat2 * Math.PI/180;
   const dp = (lat2-lat1) * Math.PI/180;

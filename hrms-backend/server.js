@@ -143,6 +143,10 @@ const startServer = async () => {
     await sequelize.sync();
     console.log('✅ All models were synchronized successfully.');
 
+    // Chạy migration bảo đảm cột & constraint cho phê duyệt đa cấp role
+    const runApprovalMigration = require('./utils/approvalMigration');
+    await runApprovalMigration();
+
     // Seed Roles
     const { Role } = require('./models');
     const ROLES = require('./constants/roles');

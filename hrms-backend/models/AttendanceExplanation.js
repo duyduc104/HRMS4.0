@@ -25,11 +25,31 @@ const AttendanceExplanation = sequelize.define('AttendanceExplanation', {
     type: DataTypes.TEXT,
   },
   status: {
-    type: DataTypes.ENUM('Pending', 'Approved', 'Rejected'),
+    type: DataTypes.STRING(50),
     defaultValue: 'Pending',
+  },
+  managerApprovedBy: {
+    type: DataTypes.UUID,
+    allowNull: true,
+  },
+  managerApprovedAt: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
+  hrApprovedBy: {
+    type: DataTypes.UUID,
+    allowNull: true,
+  },
+  hrApprovedAt: {
+    type: DataTypes.DATE,
+    allowNull: true,
   },
   approvedBy: {
     type: DataTypes.UUID,
+    allowNull: true,
+  },
+  rejectionReason: {
+    type: DataTypes.TEXT,
     allowNull: true,
   }
 }, {

@@ -61,9 +61,14 @@ function ProtectedRoute() {
 
 function DashboardRouter() {
   const { user } = useAuthStore();
-  const role = user?.role?.toLowerCase().replace(' ', '_') || 'employee';
+  const userRole = user?.role?.toLowerCase().replace(' ', '_') || 'employee';
+  const userRoles = (user?.roles || []).map((r: any) => 
+    (typeof r === 'string' ? r : r.name || '').toLowerCase().replace(' ', '_')
+  );
+  const allRoles = [...new Set([userRole, ...userRoles])];
+  const isManagerOrAdmin = allRoles.some(r => ['admin', 'hr_manager', 'department_manager'].includes(r));
   
-  if (role === 'employee') return <EmployeeDashboard />;
+  if (!isManagerOrAdmin) return <EmployeeDashboard />;
   return <AdminDashboard />;
 }
 
@@ -75,8 +80,12 @@ function RoleProtectedRoute({ allowedRoles }: { allowedRoles: string[] }) {
     return <Navigate to="/login" replace />;
   }
 
-  const role = user?.role?.toLowerCase().replace(' ', '_') || 'employee';
-  const hasAccess = allowedRoles.includes(role);
+  const userRole = user?.role?.toLowerCase().replace(' ', '_') || 'employee';
+  const userRoles = (user?.roles || []).map((r: any) => 
+    (typeof r === 'string' ? r : r.name || '').toLowerCase().replace(' ', '_')
+  );
+  const allRoles = [...new Set([userRole, ...userRoles])];
+  const hasAccess = allowedRoles.some(r => allRoles.includes(r));
 
   useEffect(() => {
     if (!hasAccess) {

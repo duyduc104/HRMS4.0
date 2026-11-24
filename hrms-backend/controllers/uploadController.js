@@ -4,10 +4,16 @@ const path = require('path');
 const TEMP_DIR = path.join(__dirname, '../public/uploads/temp');
 const ATTACH_DIR = path.join(__dirname, '../public/uploads/attachments');
 
-// Tạo thư mục nếu chưa tồn tại
+// Controller xu ly tai len file dung luong lon theo co che chia nho manh (Chunk Upload)
+// Giai thich code khong thuan:
+// - Ap dung ky thuat Chunked Upload: file lon duoc cat thanh nhieu manh nho o Frontend va gui doc lap len Backend de tranh tran RAM va timeout mang.
+// - mergeChunks su dung Node.js WriteStream de noi tuan tu tung block du lieu nhi phan vao file dich, sau do tu dong xoa bo cac chunk tam de tiet kiem dung luong o dia.
+
+// Tao thu muc neu chua ton tai
 if (!fs.existsSync(TEMP_DIR)) fs.mkdirSync(TEMP_DIR, { recursive: true });
 if (!fs.existsSync(ATTACH_DIR)) fs.mkdirSync(ATTACH_DIR, { recursive: true });
 
+// Ham nay dung de tiep nhan va luu tung manh file chunk vao thu muc tam rieng biet theo fileId
 exports.uploadChunk = (req, res) => {
   try {
     const { fileId, chunkIndex } = req.body;
@@ -17,13 +23,13 @@ exports.uploadChunk = (req, res) => {
       return res.status(400).json({ message: 'Thiếu dữ liệu chunk.' });
     }
 
-    // Tạo thư mục riêng cho từng file (nếu nhiều người cùng up)
+    // Tao thu muc rieng cho tung file (neu nhieu nguoi cung up)
     const fileDir = path.join(TEMP_DIR, fileId);
     if (!fs.existsSync(fileDir)) {
       fs.mkdirSync(fileDir, { recursive: true });
     }
 
-    // Di chuyển file chunk vào đúng thư mục
+    // Di chuyen file chunk vao dung thu muc
     const chunkPath = path.join(fileDir, `${chunkIndex}`);
     fs.renameSync(chunk.path, chunkPath);
 
@@ -34,6 +40,7 @@ exports.uploadChunk = (req, res) => {
   }
 };
 
+// Ham nay dung de ghep noi toan bo cac manh chunk lai thanh 1 file hoan chinh bang Stream va xoa sach thu muc tam
 exports.mergeChunks = async (req, res) => {
   try {
     const { fileId, fileName, totalChunks } = req.body;
@@ -59,18 +66,18 @@ exports.mergeChunks = async (req, res) => {
       const chunkData = fs.readFileSync(chunkPath);
       writeStream.write(chunkData);
       
-      // Xóa chunk sau khi gộp
+      // Xoa chunk sau khi gop
       fs.unlinkSync(chunkPath);
     }
 
     writeStream.end();
 
-    // Xóa thư mục tạm
+    // Xoa thu muc tam
     if (fs.existsSync(fileDir)) {
       fs.rmdirSync(fileDir);
     }
 
-    // Trả về kết quả đường dẫn an toàn (để gửi nodemailer)
+    // Tra ve ket qua duong dan an toan (de gui nodemailer)
     res.json({ 
       message: 'Ghép file thành công', 
       file: {

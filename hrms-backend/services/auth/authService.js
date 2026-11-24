@@ -1,4 +1,4 @@
-const bcrypt = require('bcryptjs');
+﻿const bcrypt = require('bcryptjs');
 const svgCaptcha = require('svg-captcha');
 const crypto = require('crypto');
 const Employee = require('../../models/Employee');
@@ -97,6 +97,55 @@ class AuthService {
     return { id: newUser.id, username: newUser.username };
   }
 
+  /**
+   * 2b. Admin tao tai khoan nhan vien voi role tuy chon (protected - chi admin goi duoc)
+   * - Duoc phep gan role: employee, hr_manager, department_manager, admin
+   * - Khong yeu cau Captcha (goi tu dashboard admin noi bo)
+   */
+  static async adminCreateEmployee(data) {
+    const { username, password, email, fullName, code, roleName, departmentId, phone, position } = data;
+
+    // Validate role duoc phep
+    const allowedRoles = Object.values(ROLES); // ['admin','hr_manager','department_manager','employee']
+    const targetRoleName = (roleName || ROLES.EMPLOYEE).toLowerCase();
+    if (!allowedRoles.includes(targetRoleName)) {
+      throw { status: 400, message: `Role khong hop le. Cac role cho phep: ${allowedRoles.join(', ')}` };
+    }
+
+    if (!username || !password) {
+      throw { status: 400, message: 'username va password la bat buoc' };
+    }
+
+    const employeeCode = code || `EMP-${Date.now()}`;
+
+    const existingUser = await Employee.findOne({ where: { username } });
+    if (existingUser) {
+      throw { status: 400, message: 'Username da ton tai' };
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password, salt);
+
+    const newUser = await Employee.create({
+      username,
+      code: employeeCode,
+      fullName: fullName || username,
+      email: email || null,
+      passwordHash,
+      departmentId: departmentId || null,
+      phone: phone || null,
+      position: position || null,
+    });
+
+    // Gan role duoc chi dinh
+    const targetRole = await Role.findOne({ where: { name: targetRoleName } });
+    if (!targetRole) {
+      throw { status: 400, message: `Khong tim thay role '${targetRoleName}' trong he thong` };
+    }
+    await newUser.addRole(targetRole);
+
+    return { id: newUser.id, username: newUser.username, role: targetRoleName };
+  }
   /**
    * Helper xử lý chung sau khi xác thực thành công (tạo token, notify, force logout)
    */

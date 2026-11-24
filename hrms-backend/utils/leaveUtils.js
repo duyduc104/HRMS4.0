@@ -1,18 +1,10 @@
-/**
- * leaveUtils.js — Hàm tính ngày nghỉ phép dùng chung
- *
- * Đảm bảo nhất quán giữa payrollController.js và telegramBot.js.
- * Logic: loại trừ T7, CN; xử lý nửa ngày; clip theo kỳ lương.
- */
+// Tien ich tinh so ngay nghi phep dung chung toan he thong (Payroll va Telegram Bot)
+// Giai thich code khong thuan:
+// - Loai tru thu 7 va chu nhat khoi tong so ngay nghi.
+// - Tinh toan chinh xac nghi nua ca (0.5 ngay neu chenh lech <= 4.5 tieng) hoac nghi full ca (1.0 ngay).
+// - Cat khoang thoi gian (clip) theo ky luong de tranh tinh vuot thang.
 
-/**
- * Tính số ngày nghỉ phép hợp lệ từ danh sách Leave objects.
- *
- * @param {Array}  leaves      - Mảng leave records từ DB (phải có startDate, endDate)
- * @param {Date}   [periodStart] - Giới hạn đầu kỳ (để tính trong tháng cụ thể)
- * @param {Date}   [periodEnd]   - Giới hạn cuối kỳ
- * @returns {number} Tổng số ngày nghỉ phép (có thể là 0.5 cho nửa ngày)
- */
+// Ham nay dung de tinh tong so ngay nghi phep hop le tu danh sach cac don Leave, tu dong tru T7 CN va nua ngay
 function calculateLeaveDays(leaves, periodStart = null, periodEnd = null) {
   let totalDays = 0;
 

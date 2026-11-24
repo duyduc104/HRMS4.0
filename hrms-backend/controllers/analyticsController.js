@@ -2,14 +2,24 @@ const { Employee, Attendance, Payroll, Leave, SecurityViolation } = require('../
 const { Op, fn, col, literal } = require('sequelize');
 const { GoogleGenAI } = require('@google/genai');
 
+// Helper lay chuoi ngay YYYY-MM-DD chuan theo mui gio Viet Nam (Asia/Ho_Chi_Minh - UTC+7)
+// Giai quyet triet de loi toISOString() quy doi ve UTC khien dateStr bi lui 1 ngay truoc 07:00 sang
+function getVietnamDate(date = new Date()) {
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
+  return formatter.format(date);
+}
+
+// Controller phan tich du lieu va thong ke bao cao toan he thong HRMS
 class AnalyticsController {
-  /**
-   * GET /api/analytics/overview
-   * Trả về số liệu tổng quan: tổng NV, đi làm hôm nay, đi trễ, nghỉ phép
-   */
+  // Ham nay dung de lay so lieu tong quan: tong nhan vien, so nguoi di lam hom nay, di tre, nghi phep va ty le cham cong
   static async getOverview(req, res) {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = getVietnamDate();
 
       const [totalEmployees, presentToday, lateToday, onLeaveToday] = await Promise.all([
         Employee.count({ where: { isDeleted: false, status: 'active' } }),
@@ -40,37 +50,80 @@ class AnalyticsController {
     }
   }
 
-  /**
-   * GET /api/analytics/attendance-trend?days=30
-   * Xu hướng chấm công theo ngày (7 hoặc 30 ngày gần nhất)
-   */
+  // Ham nay dung de lay xu huong cham cong theo ngay (7 hoac 30 ngay gan nhat, bo qua thu 7 va chu nhat)
   static async getAttendanceTrend(req, res) {
     try {
       const days = parseInt(req.query.days) || 30;
-      const results = [];
+      const now = new Date();
+      const workingDates = [];
 
+      // Xac dinh danh sach ngay lam viec (tru T7, CN) theo mui gio Viet Nam
       for (let i = days - 1; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        const dayOfWeek = d.getDay();
-        // Bỏ qua T7, CN
+        const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+        const dateStr = getVietnamDate(d);
+
+        // Xac dinh thu trong tuan theo gio Viet Nam (tranh lech ngay do gio he thong)
+        const [y, m, dayNum] = dateStr.split('-').map(Number);
+        const vnDateObj = new Date(y, m - 1, dayNum);
+        const dayOfWeek = vnDateObj.getDay();
+
+        // Bo qua Thu 7 (6) va Chu Nhat (0)
         if (dayOfWeek === 0 || dayOfWeek === 6) continue;
 
-        const dateStr = d.toISOString().split('T')[0];
-        const [present, late, absent] = await Promise.all([
-          Attendance.count({ where: { date: dateStr, status: 'Present' } }),
-          Attendance.count({ where: { date: dateStr, status: 'Late' } }),
-          Attendance.count({ where: { date: dateStr, status: 'Absent' } }),
-        ]);
-
-        results.push({
-          date: dateStr,
-          label: d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }),
-          present,
-          late,
-          absent,
-        });
+        const label = `${String(dayNum).padStart(2, '0')}/${String(m).padStart(2, '0')}`;
+        workingDates.push({ dateStr, label });
       }
+
+      if (workingDates.length === 0) {
+        return res.json([]);
+      }
+
+      const minDate = workingDates[0].dateStr;
+      const maxDate = workingDates[workingDates.length - 1].dateStr;
+
+      // 1 Query duy nhat tong hop toan bo so lieu cham cong trong dai ngay lam viec
+      const attendanceCounts = await Attendance.findAll({
+        where: {
+          date: { [Op.between]: [minDate, maxDate] },
+          status: { [Op.in]: ['Present', 'Late', 'Absent', 'Half-day'] }
+        },
+        attributes: [
+          'date',
+          'status',
+          [fn('COUNT', col('id')), 'count']
+        ],
+        group: ['date', 'status'],
+        raw: true
+      });
+
+      // Map du lieu: dateStr -> { Present, Late, Absent }
+      const countMap = {};
+      attendanceCounts.forEach(item => {
+        const d = String(item.date).substring(0, 10);
+        if (!countMap[d]) {
+          countMap[d] = { Present: 0, Late: 0, Absent: 0 };
+        }
+        const cnt = parseInt(item.count, 10) || 0;
+        if (item.status === 'Present' || item.status === 'Half-day') {
+          countMap[d].Present += cnt;
+        } else if (item.status === 'Late') {
+          countMap[d].Late += cnt;
+        } else if (item.status === 'Absent') {
+          countMap[d].Absent += cnt;
+        }
+      });
+
+      // Map vao mang workingDates theo dung thu tu thoi gian
+      const results = workingDates.map(({ dateStr, label }) => {
+        const dayCounts = countMap[dateStr] || { Present: 0, Late: 0, Absent: 0 };
+        return {
+          date: dateStr,
+          label,
+          present: dayCounts.Present,
+          late: dayCounts.Late,
+          absent: dayCounts.Absent
+        };
+      });
 
       res.json(results);
     } catch (error) {
@@ -79,10 +132,7 @@ class AnalyticsController {
     }
   }
 
-  /**
-   * GET /api/analytics/payroll-summary?year=2026
-   * Tổng chi lương theo từng tháng trong năm
-   */
+  // Ham nay dung de tinh tong chi phi luong, lam them gio OT va khau tru theo tung thang trong nam
   static async getPayrollSummary(req, res) {
     try {
       const year = parseInt(req.query.year) || new Date().getFullYear();
@@ -101,7 +151,7 @@ class AnalyticsController {
         months.push({
           month: m,
           label: `T${m}`,
-          totalNet:    Math.round((totalNet / 1_000_000) * 10) / 10, // Đơn vị: triệu VNĐ (giữ 1 số thập phân)
+          totalNet:    Math.round((totalNet / 1_000_000) * 10) / 10, // Don vi: trieu VND
           totalOT:     Math.round((totalOT / 1_000_000) * 10) / 10,
           totalDeduct: Math.round((totalDeduct / 1_000_000) * 10) / 10,
           headcount: payrolls.length,
@@ -115,15 +165,15 @@ class AnalyticsController {
     }
   }
 
-  /**
-   * GET /api/analytics/department-attendance
-   * Tỷ lệ chấm công theo phòng ban (tháng hiện tại)
-   */
+  // Ham nay dung de tinh ty le di lam cham cong theo tung phong ban trong thang hien tai
+  // TOI UU: Loai bo N+1 query loop, tinh toan theo mui gio Viet Nam
   static async getDepartmentAttendance(req, res) {
     try {
       const now = new Date();
-      const startDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-      const endDate   = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth();
+      const startDate = getVietnamDate(new Date(currentYear, currentMonth, 1));
+      const endDate   = getVietnamDate(new Date(currentYear, currentMonth + 1, 0));
 
       const employees = await Employee.findAll({
         where: { isDeleted: false, status: 'active' },
@@ -132,77 +182,71 @@ class AnalyticsController {
 
       // Group by department
       const deptMap = {};
+      const empIdToDept = {};
       for (const emp of employees) {
         const dept = emp.department || 'Chưa phân';
         if (!deptMap[dept]) deptMap[dept] = { total: 0, present: 0 };
         deptMap[dept].total++;
+        empIdToDept[emp.id] = dept;
+      }
 
-        const count = await Attendance.count({
+      // 1 Query duy nhat lay so ngay di lam cua tat ca nhan vien
+      const empIds = employees.map(e => e.id);
+      if (empIds.length > 0) {
+        const attendanceCounts = await Attendance.findAll({
           where: {
-            employeeId: emp.id,
+            employeeId: { [Op.in]: empIds },
             date: { [Op.between]: [startDate, endDate] },
             status: { [Op.in]: ['Present', 'Late', 'Half-day'] },
           },
+          attributes: [
+            'employeeId',
+            [fn('COUNT', col('id')), 'count']
+          ],
+          group: ['employeeId'],
+          raw: true
         });
-        deptMap[dept].present += count;
+
+        attendanceCounts.forEach(record => {
+          const dept = empIdToDept[record.employeeId];
+          if (dept && deptMap[dept]) {
+            deptMap[dept].present += parseInt(record.count, 10) || 0;
+          }
+        });
       }
 
-      // Tính số ngày làm việc trong tháng
+      // Tính số ngày làm việc trong tháng (tru T7, CN)
       let workingDays = 0;
-      for (let d = new Date(startDate); d <= new Date(endDate); d.setDate(d.getDate() + 1)) {
+      const lastDay = new Date(currentYear, currentMonth + 1, 0).getDate();
+      for (let day = 1; day <= lastDay; day++) {
+        const d = new Date(currentYear, currentMonth, day);
         if (d.getDay() !== 0 && d.getDay() !== 6) workingDays++;
       }
 
-      const result = Object.entries(deptMap).map(([dept, v]) => ({
-        department: dept,
-        rate: workingDays > 0 && v.total > 0
-          ? Math.round((v.present / (v.total * workingDays)) * 100)
-          : 0,
-        headcount: v.total,
-      }));
+      const results = Object.entries(deptMap).map(([name, data]) => {
+        const expectedTotal = data.total * workingDays;
+        const rate = expectedTotal > 0 ? Math.round((data.present / expectedTotal) * 100) : 0;
+        return {
+          department: name,
+          totalEmployees: data.total,
+          presentDays: data.present,
+          rate: Math.min(100, rate),
+        };
+      });
 
-      res.json(result);
+      res.json(results);
     } catch (error) {
       console.error('Department attendance error:', error);
       res.status(500).json({ message: 'Lỗi server', error: error.message });
     }
   }
 
-  /**
-   * GET /api/analytics/leave-stats
-   * Phân bố trạng thái nghỉ phép
-   */
-  static async getLeaveStats(req, res) {
-    try {
-      const year = new Date().getFullYear();
-      const startDate = `${year}-01-01`;
-      const endDate   = `${year}-12-31`;
-
-      const [approved, pending, rejected] = await Promise.all([
-        Leave.count({ where: { status: 'Approved',  startDate: { [Op.gte]: startDate }, endDate: { [Op.lte]: endDate } } }),
-        Leave.count({ where: { status: 'Pending',   startDate: { [Op.gte]: startDate }, endDate: { [Op.lte]: endDate } } }),
-        Leave.count({ where: { status: 'Rejected',  startDate: { [Op.gte]: startDate }, endDate: { [Op.lte]: endDate } } }),
-      ]);
-
-      res.json([
-        { name: 'Đã duyệt',     value: approved, color: '#10b981' },
-        { name: 'Chờ duyệt',    value: pending,  color: '#f59e0b' },
-        { name: 'Từ chối',      value: rejected, color: '#ef4444' },
-      ]);
-    } catch (error) {
-      console.error('Leave stats error:', error);
-      res.status(500).json({ message: 'Lỗi server', error: error.message });
-    }
-  }
-
-  /**
-   * GET /api/analytics/ai-insights
-   * Gửi dữ liệu thống kê cho Gemini AI để lấy nhận xét và hành động đề xuất
-   */
+  // Ham nay dung de goi Google Gemini AI dua ra nhan xet thong minh ve tinh hinh nhan su va de xuat hanh dong
   static async getAIInsights(req, res) {
     try {
-      const today = new Date().toISOString().split('T')[0];
-      const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+      const today = getVietnamDate();
+      const now = new Date();
+      const startOfMonth = getVietnamDate(new Date(now.getFullYear(), now.getMonth(), 1));
 
       // Lấy dữ liệu thô
       const totalEmployees = await Employee.count({ where: { isDeleted: false, status: 'active' } });
@@ -271,8 +315,26 @@ Yêu cầu trả về DUY NHẤT 1 chuỗi JSON (KHÔNG bọc trong \`\`\`json) 
         contents: prompt,
       });
 
-      let jsonStr = response.text.replace(/```json/g, '').replace(/```/g, '').trim();
-      const aiResult = JSON.parse(jsonStr);
+      let jsonStr = response.text.replace(/```json/gi, '').replace(/```/g, '').trim();
+      const firstBrace = jsonStr.indexOf('{');
+      const lastBrace = jsonStr.lastIndexOf('}');
+      if (firstBrace !== -1 && lastBrace !== -1) {
+        jsonStr = jsonStr.substring(firstBrace, lastBrace + 1);
+      }
+
+      let aiResult;
+      try {
+        aiResult = JSON.parse(jsonStr);
+      } catch (pErr) {
+        aiResult = {
+          insights: [
+            `Tổng nhân sự: ${totalEmployees}`,
+            lateTodayRecords.length > 0 ? `Có ${lateTodayRecords.length} nhân sự đi muộn hôm nay.` : 'Hôm nay toàn thể nhân sự đúng giờ.',
+            pendingViolations.length > 0 ? `Có ${pendingViolations.length} vi phạm bảo mật đang chờ duyệt.` : 'Không có vi phạm bảo mật nào tồn đọng.'
+          ],
+          suggestedActions: []
+        };
+      }
 
       res.json(aiResult);
     } catch (error) {

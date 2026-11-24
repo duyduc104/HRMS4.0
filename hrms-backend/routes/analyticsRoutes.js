@@ -19,9 +19,9 @@ router.get('/payroll-summary',        ...adminGuard, AnalyticsController.getPayr
 router.get('/department-attendance',  ...adminGuard, AnalyticsController.getDepartmentAttendance);
 
 // GET /api/analytics/leave-stats
-router.get('/leave-stats', authMiddleware, roleMiddleware('admin'), AnalyticsController.getLeaveStats);
+router.get('/leave-stats',            ...adminGuard, AnalyticsController.getLeaveStats);
 
 // Phân tích thông minh bằng AI
-router.get('/ai-insights', authMiddleware, roleMiddleware('admin'), AnalyticsController.getAIInsights);
+router.get('/ai-insights',            ...adminGuard, AnalyticsController.getAIInsights);
 
 module.exports = router;

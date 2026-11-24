@@ -97,6 +97,25 @@ class AuthController {
     }
   }
 
+
+  // Ham nay chi danh cho admin: tao tai khoan nhan vien voi role tuy chon
+  // (employee / hr_manager / department_manager / admin)
+  // Yeu cau: nguoi goi phai co role 'admin' - kiem soat qua authMiddleware + roleMiddleware
+  static async adminCreateEmployee(req, res) {
+    try {
+      const result = await AuthService.adminCreateEmployee(req.body);
+      res.status(201).json({ 
+        message: `Tao tai khoan thanh cong voi role '${result.role}'`, 
+        user: result 
+      });
+    } catch (error) {
+      if (error.status) {
+        return res.status(error.status).json({ message: error.message });
+      }
+      console.error('Loi server khi admin tao tai khoan:', error);
+      res.status(500).json({ message: 'Loi server khi tao tai khoan' });
+    }
+  }
   // Ham nay dung de dang xuat khoi he thong
   static async logout(req, res) {
     res.status(200).json({ message: 'Đăng xuất thành công' });
